@@ -1,0 +1,2007 @@
+                         
+                        CHANGES
+ 
+              Java(tm) Development Kit
+                version JDK 1.1.1
+
+-------------------------------------------------------------------
+目次
+-------------------------------------------------------------------
+このドキュメンテーションでは、beta 版とJDK 1.1.1 の
+最終版との間の変更点について説明します。このドキュメン
+テーションは次の 4 つの節にわかれています。
+
+    - JDK 1.1_Final から JDK 1.1.1_Final への変更
+    - JDK 1.1beta3  から JDK 1.1_Final への変更
+    - JDK 1.1beta2  から JDK 1.1beta3 への変更
+    - JDK 1.1beta   から JDK 1.1beta2 への変更
+
+各節では、それぞれの変更内容について次の順序で説明
+します。
+    - バージョン番号
+    - バグの修正
+    - Text の変更
+    - AWT の変更
+    - Beans の変更
+    - Security の変更
+    - Jar の変更
+    - Lang の変更
+    - IO の変更
+    - Java ネイティブインタフェースの変更
+    - ツールの変更
+
+    ---------------------------------------------------------
+    注意 : Java のバージョンを調べるには、
+    java -version を実行します。
+    ---------------------------------------------------------
+    注意 : この他の主な変更内容を記載した重要
+    なバグの修正リストは、次の JavaSoft の Web 
+    サイトで見ることができます。
+    http://java.sun.com/products/JDK/1.1/fixedbugs/
+    ---------------------------------------------------------
+    注意 : 既知のバグのリストは次の Web サイト
+    で見ることができます。
+    http://java.sun.com/products/JDK/1.1/knownbugs/
+    ---------------------------------------------------------
+
+===================================================================
+JDK 1.1_Final から JDK 1.1.1 への変更
+-------------------------------------------------------------------
+
+JDK 1.1.1 最終版リリースで行われた変更とバグ修正は次のとおりです。
+これはバグ修正版です。
+
+______________
+バージョン番号 - このリリースのバージョン番号は「JDK1.1.1」です。
+
+__________
+バグの修正 - このバージョンは上記の web ページに記載されているバグの
+    修正を含んでいます。
+
+_______________
+Util のバグ修正 - util.ResourceBundle class から getMenu と
+    getMenuBar メソッドを削除しました。[バグ 4036076]
+
+    このバグ修正は JDK 1.1 の API バグを修正するものです。
+
+    これら 2 つの「便利な」メソッドは、ベータリリース時のものであり、我々
+    がこれらが抱えるデザイン上の短所を発見し、削除することを決めた後に、
+    誤って JDK 1.1 最終版に残ったままになっていたものです。これらが 1.1 
+    リリース版に含まれているのはバグであり、これらのメソッドを呼び出すべ
+    きではありません。1.1.1 では削除しました。便利なメソッドですが、必要
+    不可欠ではなく、また代替コードも単純です。
+
+    より明確にすると、JDK 1.1 の ResourceBundle クラスには以下の 2 つのメ
+    ソッドがありました。
+
+    public final Menu getMenu(String key) 
+        throws MissingResourceException {
+             return (Menu) getObject(key);
+         }
+ 
+     public final MenuBar getMenuBar(String key) 
+        throws MissingResourceException {
+             return (MenuBar) getObject(key);
+     }
+
+    これらの「便利な」メソッドはユーザが Menu または MenuBar 型となる    
+    ResourceBundle 内のオブジェクトを明確にキャストしなければならないとい
+    うことを省いていました。例えば :
+
+        (Menu)rb.getObject(key)
+
+    この副作用として、Menu および MenuBar 型として返されることにより、こ
+    のクラスは awt パッケージを参照します。ResourceBundle は相対的には低
+    レベルの部類ですが、AWT全体は相対的に高レベルの部類です。この依存関係
+    は数多くの問題を引き起こします。最も顕著なもので、AWT パッケージを使
+    わないような(サーバ内にあるような) Java のランタイム環境が構築できな
+    くなります。
+
+    AWT 上のこの依存を削除するにはこれらの API が ResourceBundle から完全
+    に削除されることが要求されます。この変更は、もちろん、これらのメソッ
+    ドを呼び出すコードを壊します。この利点はこれらの 2 つの API が取るに
+    足りないものだったということです。これらは単にユーザが明確なキャスト
+    をタイプすることを補助していただけでした。その上、これらの 2 つのメ
+    ソッドは 1.1 で新しくできたものなので、そんなに長い間は有効ではありま
+    せんでした。
+
+________________________
+AWT Component のバグ修正 - java.awt.Component.locale フィールドを
+    protected から private に変更しました。
+
+    locale フィールドは getLocale() および setLocale() メソッドを通してア
+    クセスすることができ、そしてすべてのコードにはこれらが使われるべきで
+    す。この変更は将来軽量なフレームワークの開発をサポートするために必要
+    です。
+
+___________________________
+AWT datetransfer のバグ修正 - DataFlavor の MIME 型を訂正しました。
+    [バグ 4037854]
+
+    JDK 1.1 では、java.awt.datatransfer.DataFlavor が誤った MIME タイプを
+    使っていました。DataFlavor は java の直列化されたオブジェクトには以下
+    のような MIME タイプを要求していました :
+
+       application/x-javaserializedobject 
+
+    この名前は他の既存の名前や共通規約とは食い違っていました。この名前に
+    以下のようにハイフンを加えることにより訂正しました。
+
+       application/x-java-serialized-object
+
+    これは以下のものとも調和がとれています :
+
+       application/java-vm 
+       application/x-java-vm 
+       application/x-java-archive 
+
+___________
+Font の変更 - Times、Helvetica、Courier が Latin1 キャラクタにマップ
+    されました。
+
+    Times、Helvetica、そして Courier フォントは Symbol や ZapfDingabats 
+    のような non-Latin1 のフォントのクラスにはマップされません。これらの
+    3 つのフォントはちょうどバージョン 1.0 のように Latin1 キャラクタに
+    マップされます。
+
+    もし non-Latin1 のキャラクタを欲しいときには、Symbol や ZapfDingabats 
+    のようなフォントを Java の仮想フォントにマップしなければいけません。
+    これらの仮想フォントのクラスは Serif、Sans-serif、Monospaced、
+    Dialog、そして DialogInput です。
+
+
+===================================================================
+JDK 1.1beta3 から JDK 1.1_Finalへの変更
+-------------------------------------------------------------------
+
+JDK 1.1 リリースで行われた変更とバグ修正は次のとおりです。
+
+______________
+バージョン番号 - このリリースのバージョン番号は「JDK1.1_Final」です。
+このドキュメンテーションではこれ以降、単に「JDK1.1」と呼びます。
+
+___________
+Text の変更 - Text パッケージへの広範囲に渡る表面的な変更内容
+
+    Text パッケージでは、簡略化、合理化、国際化 API の適切な抽象を目的と
+    して、設計の見直しが行われました。その結果、以下に示すような広範囲の
+    変更が加えられました。これらの変更によって、Java における国際化の習得
+    と使用の効率が大幅に改善されました。
+ 
+    これらの変更の多くは、API の改名や移動、引数の順序の変更など表面的な
+    もので、Java システム全体で適用されている規則により正確に準拠すること
+    を目的としています。
+
+___________
+Text の変更 - CharacterIterator
+
+    getTextメソッドが削除されました。CharacterIterator は、テキストの実際
+    の保存方法を公開することなく、テキスト中の１文字ずつにアクセスするた
+    めのものです。一部の CharacterIterator は、簡単にまたは効率的には   
+    String として保存できないテキストを扱います。テキスト全体へのアクセス
+    は、テキストオブジェクトの責任で行うのが理想的です。
+
+    startIndex が getBeginIndex に、endIndex が getEndIndex に改名されま
+    した。これは、取得関係のメソッドと設定関係のメソッドに対する命名パ
+    ターンや、テキスト範囲を表す際の java.lang.String の規則に従ったもの
+    です。
+
+___________
+Text の変更 - ChoiceFormat
+
+    コンストラクタが、Objectではなく String の配列を受け取るように変更さ
+    れました。これは、このコンストラクタに String 以外のオブジェクトを渡
+    しても意味がないためです。
+
+    setChoices メソッドが、Object ではなく String の配列を受け取るように
+    変更されました。これは、このメソッドに String 以外のオブジェクトを渡
+    しても意味がないためです。
+
+    ほかの Format クラスと同じように、applyPattern メソッドと toPattern 
+    メソッドが追加されました。
+
+    各 format メソッドが FormatStatus ではなく FieldPosition を引数として
+    受け取るように変更されました。FormatStatus の変更の説明を参照してくだ
+    さい。
+    
+    各 parse メソッドが ParseStatus ではなく ParsePosition を引数として受
+    け取るように変更されました。ParseStatus の変更の説明を参照してくださ
+    い。
+    
+    clone メソッド、hashCode メソッド equals メソッドが追加されました。こ
+    れらは標準的なオーバーライドで、意味的な変更はありません。
+
+___________
+Text の変更 - Collation
+
+    クラス名が Collator に改名されました。以前の名前ではこのクラスが実際
+    に照合を行うのか、それとも単に照合規則の集まりを表すのかが明確ではあ
+    りませんでした。このため、このクラスが文字列比較を行うということがわ
+    かりやすいような名前に改名されました。
+    
+    定数 LESS、EQUAL、GREATER が削除されました。compare メソッドの返り値
+    は、LESS、EQUAL、GREATER ではなく整数の -1、0、1 になりました。これ
+    は、java.lang.String.compareTo メソッドで使われている命名パターンに
+    従ったものです。
+    
+    greater メソッドと greaterOrEqual メソッドが削除されました。compare 
+    メソッドを使用すると、これらのメソッドと同じ情報を得るこことができま
+    す。java.lang.Stringの比較 API に準拠して、compare メソッドと equals
+    メソッドだけになりました。
+    
+    compare メソッドの compare(String, int, int, String, int, int) バー
+    ジョンと getSortKey メソッドの getSortKey(String, int, int) バージョ
+    ンが削除されました。最近、String.substring に変更が加えられたことに
+    より、部分文字列の操作が可能になりました。String.substring を使って
+    部分文字列を指定することができるので、各種の部分文字列を提供するメ
+    ソッドは不要になりました。不要な API を削除することにより、API を習
+    得しやすくしました。
+    
+    public 定数の型が byte 型から int 型に変わりました。getStrength 
+    メソッドと getDecomposition メソッドの返り値の型が byte 型から int 
+    型に変わりました。setStrength メソッドと setDecomposition メソッドが
+    受け取る引数の型が byte 型から int 型に変わりました。byte 型は型の安
+    全性が低かったのに対し、int 型の定数を使うと JDK の残りの部分との整
+    合性も高まります。この変更の影響を受ける定数は次のとおりです。
+    
+     byte PRIMARY = 0;                 ==>    int PRIMARY = 0;                
+     byte SECONDARY = 1;               ==>    int SECONDARY = 1;              
+     byte TERTIARY = 2;                ==>    int TERTIARY = 2;               
+     byte IDENTICAL = 3;               ==>    int IDENTICAL = 3;              
+     byte NO_DECOMPOSITION = 0;        ==>    int NO_DECOMPOSITION = 0;       
+     byte CANONICAL_DECOMPOSITION = 1; ==>    int CANONICAL_DECOMPOSITION = 1;
+     byte FULL_DECOMPOSITION = 2;      ==>    int FULL_DECOMPOSITION = 2;     
+    
+    getDisplayName メソッドが削除されました。これらのメソッドは、対応す
+    る Locale.getDisplayName メソッドと同じ結果を返します。もっと便利な
+    データが使用できるようになるまで、これらのメソッドを API に含めない
+    ことにしました。
+    
+    現実に則した equals メソッドが追加されました。このメソッドによって、
+    サブクラスで equals メソッドを正しく実装できます。
+    
+    getSortKey メソッドが getCollationKey に改名されました。getSortKey 
+    の変更についての説明を参照してください。
+    
+    getDefault メソッドが getInstance に改名されました。これは、ファクト
+    リメソッドの新しい命名パターンに従ったものです。
+
+___________
+Text の変更 - CollatedString
+
+    このクラスは削除されました。このクラスの目的は、String とその
+    CollationKey を関連づけることにありました。CollationKey は、その生成
+    元の String への参照を保持するように変更されたので、API のサイズを減
+    らすためにこのクラスは削除されました。
+
+___________
+Text の変更 - CollationElementIterator
+
+    public コンストラクタが削除されました。CollationElementIterators は 
+    RuleBasedCollator オブジェクトによって生成されます。これは 
+    RuleBasedCollator オブジェクトをコンストラクタに引き渡すことによって
+    表わされました。RuleBasedCollator のファクトリメソッドによってしか
+    CollationElementIterator を作成できない方が、これらの結びつきが明確
+    になります。
+
+    next メソッドの返り値に対する直接比較が可能になりました。これは API 
+    の変更ではなく、next メソッドの意味的な変更です。
+    
+___________
+Text の変更 - DateFormat
+
+    コンストラクタがprotectedになりました。DateFormat はabstractクラス
+    なので、public コンストラクタは必要ありません。
+    
+    すべての getDisplayName メソッドが削除されました。これらのメソッド
+    は、対応する Locale.getDisplayName メソッドと同じ結果を返します。もっ
+    と便利なデータを使用できるようになるまで、これらのメソッドを API に含
+    めないことにしました。
+    
+    MEDIUM というスタイルが追加されました。これは以前の DEFAULT スタイル
+    に相当します。このリリースでは、MEDIUM と DEFAULT の効果は同じです。
+    将来的に、DEFAULT の意味は地域のデータによって決定されるようになり、
+    スタイルの選択項目の体系がもっと論理的になります。
+    
+    format メソッドが FormatStatus ではなく FieldPosition を引数として受
+    け取るように変更されました。FormatStatus の変更の説明を参照してくだ
+    さい。
+    
+    parse メソッドと parseObject メソッドが ParseStatus ではなく 
+    ParsePosition を引数として受け取るように変更されました。ParseStatus 
+    の変更の説明を参照してください。
+    
+    getTimeFormat メソッドが getTimeInstance メソッドに、getDateFormat 
+    メソッドが getDateInstanceメソッドに、また getDateTimeFormat メソッ
+    ドが getDateTimeInstance メソッドに改名されました。これはファクトリ
+    メソッドの新しい命名パターンに従ったものです。
+    
+    getInstance() ファクトリメソッドが追加されました。このメソッドの内容
+    は、以前の getDateTimeFormat(SHORT,SHORT) と同じです。これは、常に利
+    用できるようにデフォルト値を返す getInstance() を提供するファクトリ
+    のパターンに従ったものです。
+    
+    getValidationModeメソッドが isLenientメソッドに、setValidationMode 
+    メソッドが setLenient メソッドに改名されました。これによってメソッド
+    の目的がわかりやすくなりました。
+    
+     public 定数の型が byte 型から int 型に変更されました。byte 型は型
+    の安全性が低いのに対し、定数に int 型を使うと JDK の残りの部分との整
+    合性が高まります。また、定数は JDK の命名規則に従って改名され、次の
+    ようになりました。
+    
+     byte ERA_FIELD = 0;                ==>   int ERA_FIELD = 0;
+     byte YEAR_FIELD = 1;               ==>   int YEAR_FIELD = 1;
+     byte MONTH_FIELD = 2;              ==>   int MONTH_FIELD = 2;
+     byte DATE_FIELD = 3;               ==>   int DATE_FIELD = 3;
+     byte HOUROFDAY1_FIELD = 4;         ==>   int HOUR_OF_DAY1_FIELD = 4;
+     byte HOUROFDAY0_FIELD = 5;         ==>   int HOUR_OF_DAY0_FIELD = 5;
+     byte MINUTE_FIELD = 6;             ==>   int MINUTE_FIELD = 6;
+     byte SECOND_FIELD = 7;             ==>   int SECOND_FIELD = 7;
+     byte MILLISECOND_FIELD = 8;        ==>   int MILLISECOND_FIELD = 8;
+     byte DAYOFWEEK_FIELD = 9;          ==>   int DAY_OF_WEEK_FIELD = 9;
+     byte DAYOFYEAR_FIELD = 10;         ==>   int DAY_OF_YEAR_FIELD = 10;
+     byte DAYOFWEEKINMONTH_FIELD = 11;  ==>   int DAY_OF_WEEK_IN_MONTH_FIELD = 11;
+     byte WEEKOFYEAR_FIELD = 12;        ==>   int WEEK_OF_YEAR_FIELD = 12;
+     byte WEEKOFMONTH_FIELD = 13;       ==>   int WEEK_OF_MONTH_FIELD = 13;
+     byte AMPM_FIELD = 14;              ==>   int AM_PM_FIELD = 14;
+     byte HOUR1_FIELD = 15;             ==>   int HOUR1_FIELD = 15;
+     byte HOUR0_FIELD = 16;             ==>   int HOUR0_FIELD = 16;
+     byte TIMEZONE_FIELD = 17;          ==>   int TIMEZONE_FIELD = 17;
+                 
+    
+___________
+Text の変更 - DateFormatData
+
+    クラス名が DateFormatSymbols に変更されました。この変更によって、書式
+    設定に使用する文字列と記号の集まりというクラスの目的がわかりやすくな
+    りました。
+    
+    millisPerHour protectedフィールドが削除されました。これは書式設定の記
+    号の集まりとしては適切なフィールドではありませんでした。
+    
+    getAmpms メソッドが getAmPmStrings メソッドに、setAmpms メソッドが 
+    setAmPmStrings メソッドに改名されました。新しい名前は大小文字の規則に
+    従ったもので、メソッドの目的がわかりやすくなりました。
+    
+    useLocalizedPattern メソッドと setPatternLocalized メソッドが削除され
+    ました。SimpleDateFormat の toLocalizedPattern メソッドと 
+    applyLocalizedPattern メソッドを使用して、これらのメソッドと同じ結果
+    を得ることができます。これらのメソッドは書式設定記号の集まりとしては
+    適切ではありませんでした。
+    
+___________
+Text の変更 - DecimalFormat
+
+    getThousandsInterval メソッドと setThousandsInterval メソッドが 
+    getGroupingSize と setGroupingSize に改名されました。これによってメ
+    ソッドの目的がわかりやすくなりました。
+    
+    getFactor メソッドと setFactor メソッドがgetMultiplier メソッドと
+    setMultiplier メソッドに改名されました。これによってメソッドの目的
+    がわかりやすくなりました。
+    
+    コンストラクタが、NumberFormatData オブジェクトではなく 
+    DecimalFormatSymbols オブジェクトを受け取るように変更されました。
+    NumberFormatData の変更の説明を参照してください。
+    
+    String だけを受け取り、デフォルトの地域に適切な DecimalFormatSymbols
+    を判別するコンストラクタが追加されました。これによって、コンストラ
+    クタのテレスコープパターンに準拠しました。
+    
+    getPattern メソッドが toPattern メソッドに改名されました。また、
+    boolean 引数が削除され、代わりに toLocalizedPattern メソッドが追加
+    されました。新しい名前は、「pattern」というプロパティが存在するので
+    はなく、現在の DecimalFormat オブジェクトの状態に一致するようにパタ
+    ーン文字列が作成されるという事実を反映しています。メソッドが 2 つに
+    分割されたため、大部分のユーザーは toLocalizedPattern の存在を無視
+    することができます。
+    
+    setPattern メソッドが applyPattern に改名されました。また、boolean 
+    引数が削除され、代わりに applyLocalizedPattern メソッドが追加されま
+    した。新しい名前は、「pattern」というプロパティが存在するのではなく、
+    現在の DecimalFormat オブジェクトの状態に一致するようにパターン文字
+    列が作成されるという事実を反映しています。メソッドが 2 つに分割され
+    たため、大部分のユーザーは applyLocalizedPattern の存在を無視するこ
+    とができます。
+    
+    「*」と「_」がパターン構文から削除されました。これは厳密には API の
+    変更ではなく意味的な変更です。以前の実装では、これらの文字は使用方法
+    が限定されていました。
+    
+    format メソッドが FormatStatus の代わりに FieldPosition を引数として
+    受け取るように変更されました。FormatStatus の変更の説明を参照してく
+    ださい。
+    
+    parse メソッドが ParseStatus の代わりに ParsePosition を引数として受
+    け取るように変更されました。ParseStatus の変更の説明を参照してくださ
+    い。
+    
+    getNumberFormatData が getDecimalFormatSymbols に改名され、返り値の
+    型が DecimalFormatSymbols に変わりました。setNumberFormatData が 
+    setDecimalFormatSymbols に改名され、引数の型が DecimalFormatSymbols 
+    に変わりました。NumberFormatData の変更の説明を参照してください。
+    
+___________
+Text の変更 - Format
+    
+    format メソッドが FormatStatus ではなく FieldPosition を引数として受
+    け取るように変更されました。FormatStatus の変更の説明を参照してくだ
+    さい。
+    
+    parseObject メソッドが ParseStatus ではなく ParsePosition を引数とし
+    て受け取るように変更されました。ParseStatus の変更の説明を参照してく
+    ださい。
+
+___________
+Text の変更 - FormatException
+
+    クラス名が ParseException に変更され、クラスの目的がわかりやすくなり
+    ました。
+    
+    引数無しのコンストラクタが削除されました。このコンストラクタは便利で
+    はありませんでした。
+
+___________
+Text の変更 - FormatStatus
+
+    クラス名が FieldPosition に改名されました。新しい名前は、書式設定さ
+    れた文字列内で、サブフィールドがある位置を表すオブジェクトとしての目
+    的がわかりやすくなりました。
+    
+    public整数フィールドが削除され、代わりに取得用のメソッドが追加されま
+    した。テキスト内の範囲を表す際のパターンにのっとって、メソッド名が次
+    のように改名されました。
+    
+     int alignField   ==> int getField()
+     int alignStart   ==> int getBeginIndex()
+     int alignEnd     ==> int getEndIndex()
+    
+    引数無しのコンストラクタが削除され、代わりにこのフィールドを設定する
+    コンストラクタが追加されました。フィールド値は常に設定されていなけれ
+    ばならないので、オブジェクトが無効になるのを防ぐことができます。さら
+    に、2 段階の手順を踏む必要がなくなったので便利になりました。
+    
+___________
+Text の変更 - MessageFormat
+
+    メッセージパターンの構文が設計し直され、日付パターン、数値パターン、
+    選択パターンなど、ほかのパターン文字列のインライン挿入が可能になりま
+    した。これは API の変更ではありませんが、意味的には大きな違いがあり
+    ます。この変更によって、ほんの少しの手順で完全なメッセージ書式を作成
+    できるようになりました。
+
+    String 配列と Format 配列を受け取るコンストラクタが削除されました。
+    新しいインラインパターン構文では、このコンストラクタは不要になりまし
+    た。
+
+    setFormat メソッドが追加されました。このメソッドを使うと、一度に 1 
+    つの書式を設定できるので、setFormats メソッドのようにすべての書式を
+    指定する必要がありません。インラインパターン構文ではこの方がより便
+    利です。
+
+    String、Format 配列、Object 配列を受け取る format メソッドが削除され
+    ました。新しいインラインパターン構文ではこのメソッドは必要ありません。
+
+    1 つの String を受け取る parse メソッドが、1 つの Object ではなく 
+    Objects 配列を返すように変更されました。1 つのメッセージに複数のオブ
+    ジェクトを埋め込むことができるという事実を考えると、この方が適切です。
+    
+    format メソッドが FormatStatus ではなく FieldPosition を引数として受
+    け取るように変更されました。FormatStatus の変更の説明を参照してくだ
+    さい。
+    
+    parse メソッドが ParseStatus ではなく ParsePosition を引数として受け
+    取るように変更されました。ParseStatus の変更の説明を参照してください。
+    
+    getPattern メソッドが toPattern に改名されました。新しい名前は、
+    「pattern」というプロパティが存在するわけではないという事実を反映し
+    ています。パターン文字列は、 MessageFormat オブジェクトの現在の状態
+    に一致するように作成されます。
+    
+    setPattern メソッドが applyPattern メソッドに改名されました。新しい
+    名前は、「pattern」というプロパティが存在するわけではないという事実
+    を反映しています。パターン文字列は、 MessageFormat オブジェクトの状
+    態を設定する際に使用されます。
+
+    setLocale メソッドと getLocale メソッドが追加されました。
+
+___________
+Text の変更 - NumberFormat
+
+    getDefaultCurrency が getCurrencyInstance に、getDefaultPercent が 
+    getPercentInstance に改名されました。getNumberInstance ファクトリが
+    追加されました。getDefault が getInstance に改名されました。これは、
+    ファクトリの命名パターンに従ったものです。
+    
+    getCurrencySymbol メソッドと getIntlCurrencySymbol メソッドが削除さ
+    れました。これらのメソッドは、将来のリリースでもっと適切なクラスに追
+    加されます。
+    
+    {get|set}{Minimum|Maximum}{Integer|Decimal}Count で呼び出されるメソ
+    ッドで、Count が Digits に、 Decimal が Fraction に改名されました。
+    この変更によって目的がわかりやすくなりました。
+    
+    isDecimalUsedWithInteger メソッドと setDecimalUsedWithInteger メソッ
+    ドが削除されました。これらのメソッドは、DecimalFormat に 
+    isDecimalSeparatorAlwaysShown メソッド、
+    setDecimalSeparatorAlwaysShown メソッドという名前で追加されました。
+    
+    setIntegerOnly が setParseIntegerOnly に、isIntegerOnly が 
+    isParseIntegerOnly に改名されました。
+    
+    {is|set}ThousandsUsed が {is|set}GroupingUsed に改名されました。
+    
+    各 getDisplayName メソッドが削除されました。これらは対応する 
+    Locale.getDisplayName メソッドと同じ結果を返していました。もっと便利
+    なデータが使用できるようになるまでは、これらのメソッドを API に含め
+    ないことにしました。
+    
+    DECIMAL_FIELD が FRACTION_FIELD に改名されました。また、その型が 
+    byte 型から int 型に変更されました。新しい名前の方が一般的です。また、
+    定数としては int 型を使うのが一般的となっています。
+    
+    NUMERATOR_FIELD、DENOMINATOR_FIELD、EXPONENT_FIELD が削除されました。
+    これらと同じ機能はこのリリースではサポートされていません
+
+___________
+Text の変更 - NumberFormatData
+
+    クラス名が DecimalFormatSymbols に改名されました。これによって、書式
+    設定で使用される文字列と記号の集まりであるという目的が明確になりまし
+    た。
+    
+    デフォルトの地域に適したオブジェクトを作成するデフォルトのコンストラ
+    クタが追加されました。地域を受け取るコンストラクタが追加されました。
+    これらは、 DateFormatSymbols のパターンに従ったものです。
+    
+    starDigit、spaceDigit、exponential フィールドが削除されました。この
+    機能は DecimalFormat によってサポートされていません。
+    
+    public フィールドが取得用および設定用のメソッドに変更されました。
+    目的がわかりやすいように、メソッド名が次のように改名されました。
+    
+     char zeroDigit;             ==> getZeroDigit(), setZeroDigit()        
+     char thousandsSign;         ==> getGroupingSeparator(), setGroupingSeparator()
+     char decimalSign;           ==> getDecimalSeparator(), setDecimalSeparator()
+     char millePercent;          ==> getPerMill(), setPerMill()               
+     char percent;               ==> getPercent(), setPercent()               
+     char digit;                 ==> getDigit(), setDigit()               
+     char separator;             ==> getPatternSeparator(), setPatternSeparator() 
+     java.lang.String infinity;  ==> getInfinity(), setInfinity()    
+     java.lang.String nan;       ==> getNaN(), setNaN()
+     char minusSign;             ==> getMinusSign(), setMinusSign()    
+    
+    各 static final char フィールドが削除されました。これらは、地域特有
+    の数値書式設定フィールドの集まりとしては適切ではありませんでした。ま
+    た、DecimalFormat の実装以外ではあまり用途がありませんでした。削除さ
+    れたフィールドは次のとおりです。
+    
+     static final char patternZeroDigit = 48;
+     static final char patternThousandsSign =
+     static final char patternDecimalSign = 4
+     static final char patternMillePercent = 
+     static final char patternPercent = 37;  
+     static final char patternDigit = 35;    
+     static final char patternStarDigit = 42;
+     static final char patternSpaceDigit = 95
+     static final char patternSeparator = 59;
+
+___________
+Text の変更 - ParseStatus
+
+    クラス名が ParsePosition に改名されました。新しい名前は、解析の開始
+    位置と終了位置を表すオブジェクトとしての目的を反映したものです。
+    
+    引数無しのコンストラクタが削除されました。これは無駄であり、実際に用
+    途がありませんでした。
+    
+    public フィールド startAt が取得用と設定用の 2 つのメソッドに変更さ
+    れました。また、String 内の文字を表す命名パターンにのっとって改名さ
+    れ、次のようになりました。
+    
+      startAt   ==> getIndex(), setIndex()
+
+___________
+Text の変更 - SimpleDateFormat
+
+    format メソッドが FormatStatus ではなく FieldPosition を引数として受
+    け取るように変更されました。FormatStatus の変更の説明を参照してくだ
+    さい。
+    
+    Parse メソッドが ParseStatus ではなく ParsePosition を引数として受け
+    取るように変更されました。ParseStatus の変更の説明を参照してください。
+    
+    DateFormatData オブジェクトを受け取るコンストラクタが、代わりに 
+    DateFormatSymbols オブジェクトを受け取るように変更されました。
+    DateFormatData の変更の説明を参照してください。
+    
+    getDateFormatData メソッドと setDateFormatData メソッドが 
+    getDateFormatSymbols メソッドと setDateFormatSymbols メソッドに改名
+    されました。DateFormatData の変更の説明を参照してください。
+    
+    getPattern メソッドが toPattern メソッドに改名されました。また、
+    boolean 引数が削除され、代わりに toLocalizedPattern メソッドが追加さ
+    れました。新しい名前は、「pattern」というプロパティが存在するわけでは
+    なく、DecimalFormat オブジェクトの現在の状態にあわせてパターン文字列
+    が作成されるという事実を反映しています。メソッドを 2 つに分割したので、
+    大部分のユーザーは toLocalizedPattern の存在を無視することができます。
+    
+    setPattern メソッドが applyPattern メソッドに改名されました。また、
+    boolean 引数が削除され、代わりに applyLocalizedPattern メソッドが追加
+    されました。新しい名前は、「pattern」というプロパティが存在するわけで
+    はなく、パターン文字列は DecimalFormat オブジェクトの状態を設定する際
+    に使用されるという事実を反映しています。メソッドを 2 つに分割したので、
+    大部分のユーザーは applyLocalizedPattern の存在を無視することができま
+    す。
+
+    便利な引数無しのコンストラクタが追加されました。
+
+___________
+Text の変更 - SortKey
+
+    クラス名が CollationKey に改名されました。これは、ほかの照合クラスの
+    用語との整合性を取ったものです。
+    
+    getSourceString メソッドが追加されました。このメソッドは、この 
+    CollationKey が表す文字列を返します。これによって CollatedString クラ
+    スが不要になりました。
+    
+    toByteArray メソッドが追加されました。このメソッドはキーを含む 
+    byte[] を返します。
+    
+    compareTo メソッドの返り値が byte 型から int 型に変更されました。こ
+    れは、java.lang.String.compareTo のパターンに従ったものです。
+    
+___________
+Text の変更 - StringCharacterIterator
+
+    次の便利なコンストラクタが追加されました。
+    
+      public StringCharacterIterator(String text, int begin, int end, 
+      int pos) 
+    
+    startIndex メソッドが getBeginIndex メソッドに、endIndex メソッドが 
+    getEndIndex メソッドに改名されました。これは、範囲を表す際のパターン
+    に従ったものです。
+    
+    getText メソッドが削除されました。CharacterIterator の変更の説明を参
+    照してください。
+
+___________
+Text の変更 - TableCollation
+
+    クラス名が RuleBasedCollator に改名されました。以前の名前では、この
+    クラスが実際に照合を行うのか、単に照合規則の集まりを表すのかが明確で
+    はありませんでした。新しい名前からは、このクラスが文字列比較を行うこ
+    とが明確です。また、このクラスが表を照合するという誤解を生む可能性も
+    なくなりました。
+    
+    getSortKey メソッドが getCollationKey メソッドに改名されました。
+    SortKey の変更の説明を参照してください。
+    
+    指定の String の部分文字列を操作する getSortKey メソッドが削除されま
+    した。String.substring に最近加えられた変更により、部分文字列操作が
+    効率的になりました。ユーザーは String.substring を使って部分文字列を
+    指定することができるので、部分文字列を提供するメソッドが必要なくなり
+    ました。不要なメソッドを削除することにより、API の習得が楽になりまし
+    た。
+    
+    指定の String の部分文字列を操作する compare メソッドが削除されまし
+    た。String.substring に最近加えられた変更により、部分文字列操作が効
+    率的になりました。ユーザーは String.substring を使って部分文字列を指
+    定することができるので、部分文字列を提供するメソッドが必要なくなりま
+    した。不要なメソッドを削除することにより、API の習得が楽になりました。
+    
+    compare メソッドの返り値が byte 型から int 型に変更されました。
+    Collation の変更の説明を参照してください。
+    
+___________
+Text の変更 - TextBoundary
+
+    クラス名が BreakIterator に改名されました。これによってクラスの目的
+    がわかりやすくなりました。
+    
+    nthFromCurrent メソッドが next(int) に改名されました。以前よりすっき
+    りした名前になりました。
+
+    nextAfter メソッドが following メソッドに改名されました。以前よりすっ
+    きりした名前になりました。
+    
+    getText の返り値の型が CharacterIterator に変更されました。
+    BreakIteratorは CharacterIterator に関する操作を行うので 、String を
+    返しても意味がありません。
+    
+    getWorkBreak メソッドが getWordInstance に、getLineBreak メソッドが 
+    getLineInstance に改名されました。getCharacterBreak メソッドが 
+    getCharacterInstance に、getSentenceBreak メソッドが getSentenceInstance 
+    に改名されました。これは、ファクトリメソッドの命名パターンに従ったも
+    のです。
+
+___________
+UTIL の変更 - Calendar
+
+     public 定数の型が byte 型から int 型に変更されました。対応するメ
+    ソッドが、byte 型の代わりに int 型を受け取るように変更されました。ま
+    た、getDecomposition メソッドは byte 型の代わりに int 型を受け取るよ
+    うに変更されました。byte 型は型の安全性が低かったのに対し、int 型の
+    定数を使うと JDK の残りの部分との整合性も高まります。この結果、次の
+    ようになりました。
+
+                                                                        
+     byte ERA = 0;                  ==>     int ERA = 0;                  
+     byte YEAR = 1;                 ==>     int YEAR = 1;                 
+     byte MONTH = 2;                ==>     int MONTH = 2;                
+     byte WEEKOFYEAR = 3;           ==>     int WEEK_OF_YEAR = 3;         
+     byte WEEKOFMONTH = 4;          ==>     int WEEK_OF_MONTH = 4;        
+     byte DATE = 5;                 ==>     int DATE = 5;                 
+     byte DAYOFMONTH = 5;           ==>     int DAY_OF_MONTH = 5;         
+     byte DAYOFYEAR = 6;            ==>     int DAY_OF_YEAR = 6;          
+     byte DAYOFWEEK = 7;            ==>     int DAY_OF_WEEK = 7;          
+     byte DAYOFWEEKINMONTH = 8;     ==>     int DAY_OF_WEEK_IN_MONTH = 8; 
+     byte AMPM = 9;                 ==>     int AM_PM = 9;                
+     byte HOUR = 10;                ==>     int HOUR = 10;                
+     byte HOUROFDAY = 11;           ==>     int HOUR_OF_DAY = 11;         
+     byte MINUTE = 12;              ==>     int MINUTE = 12;              
+     byte SECOND = 13;              ==>     int SECOND = 13;              
+     byte MILLISECOND = 14;         ==>     int MILLISECOND = 14;         
+     byte ZONEOFFSET = 15;          ==>     int ZONE_OFFSET = 15;         
+     byte DSTOFFSET = 16;           ==>     int DST_OFFSET = 16;          
+     byte FIELDCOUNT = 17;          ==>     int FIELD_COUNT = 17;         
+                                           
+     int get(byte);                 ==>     int get(int);
+     set(byte,int);                 ==>     void set(int,int);
+     void clear(byte);              ==>     void clear(int);
+     void add(byte,int);            ==>     void add(int,int);     
+     void roll(byte,boolean);       ==>     void roll(int,boolean);
+     void setFirstDayOfWeek(byte);  ==>     void setFirstDayOfWeek(int);
+     void setMinimalDaysInFirstWeek(byte);  void setMinimalDaysInFirstWeek(int);
+     int getMinimum(byte);          ==>     int getMinimum(int);         
+     int getMaximum(byte);          ==>     int getMaximum(int);         
+     int getGreatestMinimum(byte);  ==>     int getGreatestMinimum(int); 
+     int getLeastMaximum(byte);     ==>     int getLeastMaximum(int);    
+                                                  
+    
+    getValidationMode が isLenient に、setValidationMode が setLenient 
+    に改名されました。これによって目的がわかりやすくなりました。
+    
+    getDefault メソッドが getInstance に改名されました。これは、ファクト
+    リメソッドの命名パターンに従ったものです。
+
+___________
+UTIL の変更 - GregorianCalendar
+
+     public 定数の型が byte 型から int 型に変更されました。対応するメ
+    ソッドが受け取る値と返す値の型が、byte 型から int 型に変わりました。
+    さらに、getDecomposition メソッドが byte 型ではなく int 型を返すよう
+    に変更されました。byte 型は型の安全性が低かったのに対し、int 型の定
+    数を使うと JDK の残りの部分との整合性も高まります。この結果、次のよ
+    うになりました。
+     
+     final byte AD = 0;           ==>      final int AD = 0; 
+     final byte BC = 1;           ==>      final int BC = 1; 
+    
+     void add(byte,int);          ==>      void add(int,int);          
+     void roll(byte,boolean);     ==>      void roll(int,boolean);       
+     int getMinimum(byte);        ==>      int getMinimum(int);          
+     int getMaximum(byte);        ==>      int getMaximum(int);          
+     int getGreatestMinimum(byte);==>      int getGreatestMinimum(int);  
+     int getLeastMaximum(byte);   ==>      int getLeastMaximum(int);     
+
+
+___________
+UTIL の変更 - ResourceBundle
+
+    getResourceBundle メソッドが getBundle に改名されました。
+    getResourceBundle という名前は長く、とても冗長でした。新しい名前は、
+    ファクトリメソッドの命名パターンに従っていませんが、これは「getInstance」
+    という名前が、将来のリリースで追加されるリソースバンドルクラス用に予
+    約されているためです。
+    
+__________
+AWT の変更 -  古い AWT API を使用しているプログラムをコンパイルすると、
+              推奨されないメソッドの警告メッセージが表示されるようになりま
+              した。
+
+    1.1 の beta 版では、AWT の推奨されないメソッドには、そのメソッドの 
+    javadoc コメントとして「DEPRECATED」という文字が表示されていただけで
+    した。この最終版では、これらのメソッドに「@deprecated」タグがついて
+    いるので、適切なコンパイラオプションを使用すれば警告を生成することが
+    でき、必要に応じてプログラムを楽に変換することができます。
+
+    次の URL の文書に、1.1 AWT API への変換方法が記載されています。また、
+    推奨されないすべてのメソッドと、それに対応する 1.1 のメソッドのリス
+    トへのリンクもあります。
+
+    http://java.sun.com/products/JDK/1.1/docs/guide/awt/HowToUpgrade.html
+
+    理由 :
+
+    AWT に推奨されないメソッドが数多くあるのは、AWT を JavaBeans 互換に
+    移行した影響です。特に、次の 2 つの分野では推奨されないメソッドが非
+    常に多くあります。
+
+    - プロパティ (location、size、visibility など)
+      AWT コンポーネントのプロパティをプログラム的に抽出できるようにする
+      ために、さまざまなメソッドの名前を JavaBeans の getFoo や setFoo 
+      のようなパターンに変更する必要がありました。
+
+    - 新しいイベントモデル
+      1.1  の JavaBeans と AWT では、新しいデリゲーションベースのイベント
+      モデルが定義されたため、イベント処理 API に大幅な変更が余儀なくされ
+      ました。
+
+    一部の推奨されないメソッドは、ツールキット API を習得しやすくするため、
+    そして整合性を保つために変更されました。
+
+__________
+AWT の変更 -  Z オーダーが 1.0.2 のオーダーに戻りました。
+ 
+    beta3 のドキュメンテーションでは、Container インスタンス内の下位コン
+    ポーネントの Z オーダーが「後ろから前へ」に定義されていました。これ
+    は 1.0.2 (および beta版での実装) のデフォルトの Z オーダーとは正反対
+    だったため、FCS ではコンテナ内の Z オーダーを「前から後ろへ」に戻し
+    ました。
+
+__________
+AWT の変更 -  新規追加された API が改名されました。
+
+    次の API は改名されました ( 以前の名前 => 新しい名前 )。
+
+ 	AverageScaleFilter	=>	AreaAveragingScaleFilter
+ 	createScaledImage(...)	=>	getScaledInstance(...)
+ 	SCALE_AVERAGE		=>	SCALE_AREA_AVERAGING
+
+    理由 :
+    Java API 全体の指針に沿って、メソッド名が「getScaledInstance(...)」
+    の形式に変更されました。ファクトリや派生コンストラクタは次の命名規則
+    に従います。
+
+		get<Flavor>Instance(...arguments...)
+
+    「Average」という語は、デフォルトのスムーススケーリングフィルタによっ
+    て適用されるアルゴリズムを明確に表していませんでした。このため、この
+    フィルタの名前とアルゴリズムを「AreaAveraging」に変更し、平均を取る対
+    象をわかりやすくしました。
+
+__________
+AWT の変更 - dispatchEvent() メソッドが変更され、dispatchEventImpl() と
+             いう新規メソッドが追加されました。
+
+    AWT でイベント機構を正しく機能させるためには、dispatchEvent() 内の 
+    codepath を必ず実行する必要があります (このため、このメソッドはパッ
+    ケージプライベートでした)。実装を新しい パッケージプライベートのメ
+    ソッド (dispatchEventImpl()) に移行し、dispatchEvent() を
+    「public final」に変更し、このメソッドが内部的に dispatchEventImpl()
+    を呼び出すように変更しました。
+
+    理由 :
+    1.0 の postEvent()/deliverEvent() メソッドは推奨されていませんが、こ
+    れらに代わるメソッド (dispatchEvent()) は、現在のところパッケージプラ
+    イベートです。このため、新しいイベントモデルに移行する場合には、選択
+    肢がありません。
+
+__________
+AWT の変更 - java.awt.AWTEvent 内の getId() の大小文字規則を変更し、
+             getID() にしました。
+
+    メソッド名が getID() に変更されました。beta 版との互換性を保つために
+    推奨されないバージョンを用意しました。
+
+    理由 :
+    java.awt.AWTEvent.getID() という名前は、ほかのクラス内の対応するメソ
+    ッドとの間で整合性がありませんでした。
+	java.awt.MediaTracker.getID()
+	java.util.TimeZone.getID()
+	sun.rmi.registry.RegistryImpl.getID()
+	sun.rmi.transport.DGCImpl.getID()
+
+    命名規則が一貫していなかったため、開発者には混乱を招いていました。こ
+    の変更によってバグ 4027793 が修正されました。
+
+__________
+AWT の変更 - EventQueue がシステム特有ではなくなりました。
+
+  EventQueue に対して次の変更が加えられました :
+  
+  1)  static getEventQueue() メソッドが EventQueue から削除され、代わり
+      に「getSystemEventQueue()」という名前で Toolkit に追加されました。
+      セキュリティチェックをこのメソッド内に残したため、アプレットはシス
+      テム待ち行列インスタンスにアクセスできません (3 番も参照してくださ
+      い)。
+  
+  2)  public コンストラクタが EventQueue クラスに追加されたので、このク
+      ラスのインスタンスを複数作成できるようになりました。これにより、
+      プログラムは待ち行列を汎用的に作成および使用できるようになり、ブラ
+      ウザのベンダは「アプレット単位の待ち行列 / ディスパッチスレッド」
+      モデルを実装できるようになりました。
+  
+  3)  AppletSecurityManager 内での checkAwtEventQueueAccess() メソッドの
+      オーバーライドが削除されました。これによって、
+      lang.SecurityManager.checkAwtEventQueueAccess() を呼び出す際には常
+      にこのメソッドがデフォルトとなり、アプレットがシステムイベント待ち
+      行列を操作しようとしたときには、* 必ず * セキュリティ例外をスロー
+      するようになりました。
+  
+  4)  EventQueue ドキュメンテーションが変更されました。これによって、こ
+      のクラスが汎用であることが明確になりました。「system EventQueue」へ
+      の参照はすべて削除されました。
+
+    理由 :
+    この変更によって、アプレットごとに 1 つのディスパッチスレッドを実装で
+    きるようになりました。さらに、将来的な設計に柔軟性が生まれました。
+
+__________
+AWT の変更 - EventSource クラスが削除されました。
+
+    新しいイベントモデルには関連がないため、このクラスは削除されました。
+__________
+AWT の変更 - ウィンドウのオープンとクローズのイベント配布に関する API が
+             変更されました。
+
+    ウィンドウイベントAPI (addWindowListener、removeWindowListener など)
+    が Dialog と Frame からスーパークラスの Window に移動されました。こ
+    れによって、コードが一ヶ所にまとまりました。
+
+    理由 :
+    コードを一ヶ所にまとめることによって重複がなくなり、メンテナンスが楽
+    になりました。
+
+__________
+AWT の変更 - Transferable.getTransferData の返り値の型が変更されました。
+
+    Transferable.getTransferData の返り値が BufferedInputStream クラスに
+    なりました。
+
+__________
+AWT の変更 - MenuShortcut クラスが java.awt.Event を拡張しなくなりました。
+
+__________
+AWT の変更 - InputEvent でのボタン修飾子のマスク値が変更されました。
+		BUTTON2_MASK は ALT_MASK と同じ意味になりました。
+    		BUTTON3_MASK は META_MASK と同じ意味になりました。
+
+    理由 :
+    InputEvent  クラス内の 2 つのマスク定数の定義が正しくありませんでし
+    た。これらのイベントマスクは、JDK1.1 で新たに追加されたものです。
+    
+    この変更によって、BUTTON1_MASK と BUTTON2_MASK を使って値を調べるプ
+    ログラムは、マウスが 1 と 2 のボタンをもつプラットフォーム上でも正し
+    く動作することができます (この種のシステムでは Alt/Meta を使ってこれ
+    らのマスクを生成することができるため)。
+
+    この変更によってバグ 4029159 (Button2/Button3 マスクの値は InputEvent 
+    の Alt/Meta と同じであるべき) が修正されました。
+    
+__________
+AWT の変更 - AWT コンポーネントの直列化が変更されました。
+
+    JDK1.1 AWT の直列化にシステム的な変更が加えられました。
+
+    理由 :
+    この変更によって、バグ #4027305 が修正され、AWT の直列化の動作が
+    概して整理され、合理的になりました。
+
+    これらの変更によって、顧客は一般に直列化を使って Java Beans を保
+    存し、AWTの実装が各ベンダー間でも正しく作用できるようになりました。
+
+    開発者向けの事項 :
+  
+      - オブジェクトに複数のリスナーがある場合でも、AWT オブジェクトのグ
+        ラフの保存が機能するようになりました。
+  
+      - BeanBox で beans が相互に接続され、ファイルに保存されるのと同じ
+        ように、AWT オブジェクトが直列化可能のマークのついたリスナーを
+        もつ場合、それらは自動的に保存および復元されます。BeanBox は常に
+        直列化可能なリスナーの実装をコード生成することに注意してくだ
+        さい。
+
+      - AWT オブジェクトが直列化可能というマークのないリスナーをもつ
+        場合、これらのリスナーは writeObject() の実行時に削除されます。
+  
+      - 開発者は、オブジェクトを直列化可能にすることに対する暗示を常
+        に意識する必要があります。次に注意すべき例を示します。
+  
+        import java.awt.*;
+        import java.awt.event.*;
+        import java.io.Serializable;
+  
+        class MyApp implements ActionListener, Serializable
+        {
+          BigObjectThatShouldNotBeSeralizedWithAButton bigOne;
+          Button aButton = new Button();
+  
+          MyApp()
+          {
+             // Oops, now aButton has a listener with a 
+             // reference to bigOne!
+             aButton.addActionListener(this);
+          }
+  
+          public void actionPerformed(ActionEvent e)
+          {
+            System.out.println("Hello There");
+          }
+        }
+  
+    この例では、aButton を自身によって直列化することにより、MyApp お
+    よびそれが参照するものすべてが同様に直列化されています。問題は、
+    リスナーが意図的にではなく偶然に直列化されていることです。内部 
+    (ネスト) クラスを使うと、MyApp と ActionListener の直列化を分離
+    することができます。次に例を示します。
+  
+    import java.awt.*;
+    import java.awt.event.*;
+    import java.io.Serializable;
+  
+    class MyApp java.io.Serializable
+    {
+      BigObjectThatShouldNotBeSeralizedWithAButton bigOne;
+      Button aButton = new Button();
+  
+      class MyActionListener implements ActionListener
+      {
+        public void actionPerformed(ActionEvent e)
+        {
+  	System.out.println("Hello There");
+        }
+      }
+  
+      MyApp()
+      {
+         aButton.addActionListener(new MyActionListener());
+      }
+    }
+
+__________
+AWT の変更 - setKeyChar() メソッドが KeyEvent に追加されました。
+
+    KeyEvent にはすでに setKeyCode() がありました。この新規メソッドは、
+    1.0  スタイルのプログラムにおいてEventクラスの "key" に対して施された
+    変更を模するために必要でした。これによって、HotJava の URL フィールド
+    で <return> を押すのと同じように、すべての文字が TextFields で正しく
+    動作するようになりました。
+
+__________
+AWT の変更 - PaintEvent クラスが破損領域に四角形を使うように変更されまし
+    た。
+
+    PaintEvent の「Graphics」プロパティが、破損領域を表す Rectangle に変
+    更されました。
+
+    理由 :
+    PaintEvent クラスは public ですが、AWT 内で使用する際には完全に 
+    private でした。paint() を起動するのに使用されますが、プログラムが
+    イベントオブジェクトを明示的に確認することはありません。
+ 
+__________
+AWT の変更 - AWTEvent で次の新しい定数が定義されました。
+		RESERVED_ID_MAX
+
+    この新規定数は、すべての AWT 定義イベント ID の最大値です。独自のイ
+    ベント型を作成する必要のあるプログラムは、この最大 ID よりも大きい 
+    ID を使用し、イベントがシステム内で適切に受け渡されるようにする必要が
+    あります。
+
+    理由 :
+    独自のイベント型を作成してコンポーネントに送ることができないという
+    問題の修正の一環として、この変更が加えられました。
+
+    この変更により、バグ 4028353 (eventEnabled が AWT イベントを除くすべ
+    てに対して false を返すため、独自のイベント型を送信できない) が解決
+    しました。
+
+____________
+Beans の変更 - アプレットである beans の処理が改良されました。
+
+    Beans.instantiate が変更され、新規作成した bean または再構成し
+    た bean がアプレットかどうかをチェックするようになりました。アプレッ
+    トである場合は、最小の AppletStub と AppletContext を与えたあと、そ
+    の init メソッドを呼び出します。
+ 
+    開発者は、インスタンス化した bean を AWT コンテナに新たに追加したあ
+    と、それがアプレットかどうかをチェックし、アプレットである場合は 
+    Applet.start を呼び出す必要があります。
+
+    また開発者は、Beans.instantiate に対してアプレットまたは beans に
+    「なりたい」かどうかをテストする必要があります。
+
+____________
+Beans の変更 - Beans クラスの直列化可能リスナーが修正されました。
+
+    java.beans パッケージには、PropertyChangeSupport と
+    VetoableChangeSupport という 2 つのユーティリティクラスが含まれていま
+    す。これらはイベントリスナーのリストを管理します。今回の変更により、
+    これらのクラスのシリアル化方法が AWT と統一されました。
+
+    理由 :
+    beta3 では、これらの 2 つのクラスは AWT と統一されていませんでした。
+    つまり、直列化可能というマークのついたリスナーを選択して保存および復
+    元することができませんでした。今回の変更内容は、すべてクラス固有のも
+    のです。
+
+_______________
+Security の変更 - Key がインタフェースになりました。
+
+    Key がインタフェースになり、関連するクライアントが更新されました。
+    Key をインタフェースとするために、Key からすべての実装が削除されまし
+    た。この実装は sun.security に移動しました。
+
+    理由 :
+    Key をインタフェースとして扱うと、インタフェースとクラスの混合として
+    扱うよりも柔軟性と操作性が高まります。
+
+_______________
+Security の変更 - ファクトリメソッドの名前が改名されました。
+
+    ファクトリ関連メソッドの名前が <Engine>.get<Engine> から get<Engine>
+    に変わりました。
+
+    理由 :
+    ファクトリメソッドの名前は、以前は MessageDigest.getMessageDigest、
+    Signature.getSignature などでしたが、Signature.get、MessageDigest.get
+    などのよりよい命名規則が適用されました。結果をとても長いインタフェ
+    ース名にキャストする場合には、この変更がとても重要になります。次に例
+    を示します。
+	DSAKeyGen keyGen = (DSAKeyGen)KeyGenerator.getKeyGenerator("DSA");
+
+_______________
+Security の変更 - java.security.Signature Initialization の
+                  プロバイダ SPI が変更されました。
+
+    SPI とは、プロバイダが書き込む Service Provider Interface です。現時
+    点では、プロバイダには SUN と JSAFE の 2 つがあります。
+
+    a) Signature の 2 つの初期化メソッドの引数が、(byte[], String) から 
+      (Key) に変更されました。
+    b) Key 内の 1 つのメソッドが public になりました。
+    c) 小さなインタフェース (実装なし) DSAPrivateKey が追加されました。
+
+    java.security.Signature と sun.security.provider.DSA が変更されまし
+    た。
+
+_______________
+Security の変更- Signature、MessageDigest、KeyPairGenerator の API が変
+                 更されました。
+
+    Signature
+      public Signature get(String algorithm) 	->
+      public Signature getInstance(String algorithm)
+
+      public Signature get(String algorithm, String provider) ->
+      public Signature getInstance(String algorithm, String provider)
+
+    MessageDigest
+      public MessageDigest get(String algorithm) ->
+      public MessageDigest getInstance(String algorithm)
+
+      public MessageDigest get(String algorithm, String provider) ->
+      public MessageDigest getInstance(String algorithm, String provider)
+
+    KeyPairGenerator
+      public KeyPairGenerator get(String algorithm) ->
+      public KeyPairGenerator getInstance(String algorithm)
+
+      public KeyPairGenerator get(String algorithm, String provider) ->
+      public KeyPairGenerator getInstance(String algorithm, String 
+                                          provider)
+
+_______________
+Security の変更 - キー生成 API が変更されました。
+
+    既存のメソッドが Signature から新しい KeyPairGenerator クラスに移動
+    しました。
+
+    API の変更 :
+    a) キー生成呼び出しがSignature から新しい KeyPairGenerator クラスに
+       移動しました。
+    b) DSA キー生成の動作を特化する小さな DSAKeyPairGenerator インタ
+       フェースが追加されました。
+
+    3 つのabstract  API メソッドが新規クラスに移動されました。
+	- KeyGenerator factory メソッドが定義されました 
+	(Signature の同名メソッドと同じです)。
+	- sun.security.provider.DSA クラスに 1 行追加されました。
+	- sun.security.provider.Sun クラスに 1 行追加されました。
+	- JDK の 2 つの API クライアントが更新されました。
+
+
+    理由 :
+    顧客のからの強い要望により、Signature クラスのキー生成呼び出しが自身
+    のクラスに移動されました。キー生成は、現在は Signature クラスの一部
+    として実装されています。以前の形式は、統一された、アルゴリズムに依存
+    しないキー生成セマンティクスを提供しますが、理解するのは困難です 
+    (したがって使用するのも困難になります)。ユーザーにとっては、内部的に
+    も外部的にも混乱のもととなっていました。
+  
+__________
+Jar の変更 - 圧縮された JAR ファイルを CLASSPATH で扱えるようになりまし
+             た。
+
+    java.util.zip.ZipFile が拡張され、圧縮された ZIP ファイルおよび JAR 
+    ファイル項目を処理できるようになりました。API に対する変更はありませ
+    ん。この変更により、圧縮された JAR/ZIP ファイルを javac で操作できる
+    ようになりました。
+
+    さらに、実行時の動作にも変更が加えられ、CLASSPATH で指定された圧縮さ
+    れた ZIP ファイルと JAR ファイルを処理できるようになりました。
+
+___________
+Lang の変更 - java.lang.Throwable から 1 つのコンストラクタと 2 つのメソ
+              ッドが削除されました。
+
+    - Throwable(String, Object[]) コンストラクタが削除されました。
+    - setArguments() メソッドが削除されました。
+    - getArguments() メソッドが削除されました。
+
+    理由 :
+    引数のプロパティは、本来ローカル化されたメッセージの生成に使用する
+    ために java.lang.Throwable に追加されましたが、これらは未完成な部分
+    がありました。プログラマがほかの目的でプロパティを使用するのを防ぐた
+    め、プロパティは削除されました。
+
+_________
+IO の変更 - 推奨されないコンストラクタ StreamTokenizer(InputStream)
+
+    この変更により、バグ 4025998 が修正されました。
+
+    理由 :
+    StreamTokenizer(InputStream) コンストラクタは JDK 1.0.2 との間でバイ
+    ナリ互換を維持していませんでした。このコンストラクタは、JDK1.1 でプ
+    ラットフォームデフォルトの文字エンコーディングを使用してバイトを文字
+    に自動変換するように変更されましたが、この変更により入力データのバッ
+    ファリングが必要となり、バイナリ互換が維持できなくなりました。この変
+    更は削除されました。
+
+___________________________________
+Java ネイティブインタフェースの変更 - VM 初期化とスレッド接続構造体の
+名前が変更されました。
+
+    JDK 初期化構造体の名前が JavaVMInitArgs から JDK1_1InitArgs に変更さ
+    れ、この構造体が JDK1.1 特有であることが明確になりました。
+
+    同様に、ThreadAttachArgs の名前は JDK1_1AttachArgs に変更されました。
+
+    理由 :
+    ネイティブアプリケーションは、呼び出し API を使用して VM を起動する
+    際、VM に初期化構造体を引き渡していました。一般に、異なる VMの実装で
+    は異なる初期化情報 (ヒープサイズの最小値と最大値、ネイティブスタック
+    のサイズ、デバッグの可 / 不可など) が必要となるため、JNI 仕様では構
+    造体の内容が VMの実装によって変わることを明言しています。しかし、JDK
+    初期化構造体である JavaVMInitArgs では、ほかの VM とともに動作すると
+    いう誤った印象を与えていました。このことは、JDK の命名規則に反するこ
+    となく JNI を実装する際に混乱を招いていました。
+
+___________________________________
+Java ネイティブインタフェースの変更 - NewStringUTF のパラメータが変更さ
+れました。
+
+    NewStringUTF()から長さを表す引数 strlen(s) が削除されました。この結
+    果、このメソッドのシグネチャは次のようになりました。
+
+	jstring NewStringUTF(JNIEnv *env, const char *s);
+
+    理由 :
+    NewStringUTF は UTF 文字列から Java 文字列を作成します。UTF 文字列は
+    すでに 0 で終了していますが、関数は不要な length 引数を必要としてい
+    たため、プログラマは次のように記述する必要がありました。
+
+	NewStringUTF(env, s, strlen(s))
+
+    今回の変更により、次のように記述することができるようになりました。
+
+	NewStringUTF(env, s) 
+
+___________________________________
+Java ネイティブインタフェースの変更 - DeleteLocalRef と DeleteGlobalRef 
+が変更されました。
+
+    この変更により、プログラマは局所または大域の参照のアドレスを渡さなけ
+    ればいけなかったのが、これらの参照を DeleteLocalRef、DeleteGlobalRef
+    に直接渡すことができるようになりました。
+
+    理由 :
+    DeleteLocalRef と DeleteGlobalRef は、JNI によって作成された局所また
+    は大域の参照を削除します。これらは参照のアドレスを受け取っていたので、
+    プログラマは次のように記述しなければなりませんでした。
+
+	DeleteLocalRef(&ref)
+
+    今回の変更により、次のように参照を渡すことができるようになりました。
+
+	DeleteLocalRef(ref)
+
+___________________________________
+Java ネイティブインタフェースの変更 - 「IsSubclassOf」関数の名前が
+    「IsAssignableFrom」に変更されました。
+
+    理由 :
+    次の JNI (Java ネイティブインタフェース) 関数には、誤った名前がつい
+    ていました。
+
+        jboolean IsSubclassOf(JNIEnv *env, jclass clazz1, 
+                                           jclass clazz2);
+
+    これらの名前は、 Java言語仕様の「サブクラス化」関係の定義に則してい
+    ませんでした。
+
+    リフレクション API には、java.lang.Class 内に似たようなメソッドがあり
+    ます。
+
+        boolean isAssignableFrom(Class class);
+
+    こちらの名前の方が適切です。このため、JNI 関数の名前は次のように改名
+    されました。
+
+        jboolean IsAssignableFrom(JNIEnv *env, jclass clazz1, 
+                                               jclass clazz2);
+
+___________________________________
+Java ネイティブインタフェースの変更 - RegisterNatives が変更され、すべて
+    の情報を 1 つの配列で受け取るようになりました。
+
+    理由 :
+    次に示すように、beta3 では、RegisterNatives 関数はネイティブメソッド
+    名、シグネチャ、関数エントリポインタを含む 3 つの配列を受け取っていま
+    した。
+
+        jint RegisterNatives(JNIEnv env, jclass clazz, 
+               const char *names[],
+               const char *signatures[];
+               void *nativeProcs[]);
+		 
+    これらの配列は同じ長さでなければならず、NULL で終了する必要がありま
+    した。このため、次に示すように、すべての情報を 1つの配列にまとめ、配
+    列の長さを別の引数として渡した方が効率的です。
+
+        struct JNINativeMethod {
+            char* name;
+            char* signature;
+            void* fnPtr;
+        };
+        typedef struct JNINativeMethod JNINativeMethod;
+
+        void RegisterNatives(JNIEnv* env, jclass classID, 
+                  const JNINativeMethod methods[], jsize count);
+
+    次に示すのは、このコードを FCS で使用した例です。
+
+        JNINativeMethodSpec methods[] = {
+            { "sin", "(D)D", &::sin },
+            { "cos", "(D)D", &::cos },
+            { "tan", "(D)D", &::tan }
+        };
+        env->RegisterNatives(env->FindClass("java/lang/Math"), 
+                             methods, 3);
+
+    次に示すのは、同じコードを beta3 で使用した例です。
+
+        const char* names[] = { "sin", "cos", "tan", NULL };
+        const char* signatures[] = { "(D)D", "(D)D", "(D)D", NULL };
+        void* procs[] = { &::sin, &::cos, &::tan, NULL };
+        env->RegisterNatives(env->FindClass("java/lang/Math"), 
+                             names, signatures, proc);
+
+    前者の方法の方がわかりやすいはずです。
+
+___________________________________
+Java ネイティブインタフェースの変更 - Java オブジェクトへの参照型の体系
+が変更されました。
+
+    JDK Beta 3 では、参照型は次のように定義されていました。
+
+    typedef void *jref;    /* generic type for references */
+    typedef jref jobject;  /* Java objects */
+    typedef jref jclass;   /* Java class objects */
+    typedef jref jstring;  /* Java strings */
+    typedef jref jarray;   /* Java arrays */
+
+    これでは、jref と jobject との違いが明確ではありません。1.1 FCS では
+     jref を削除し、サブタイプの情報をもっと正確に表す参照型を追加しまし
+    た。ダミーの C++ クラスを追加することによって、サブタイプの関係を施
+    行しました。
+
+    #ifdef __cplusplus
+
+    class _jobject {};
+    class _jclass : public _jobject {};
+    class _jthrowable : public _jobject {};
+    class _jstring : public _jobject {};
+    class _jarray : public _jobject {};
+    class _jbooleanArray : public _jarray {};
+    class _jbyteArray : public _jarray {};
+    class _jcharArray : public _jarray {};
+    class _jshortArray : public _jarray {};
+    class _jintArray : public _jarray {};
+    class _jlongArray : public _jarray {};
+    class _jfloatArray : public _jarray {};
+    class _jdoubleArray : public _jarray {};
+    class _jobjectArray : public _jarray {};
+
+    typedef _jobject *jobject;
+    typedef _jclass *jclass;
+    typedef _jthrowable *jthrowable;
+    typedef _jstring *jstring;
+    typedef _jarray *jarray;
+    typedef _jbooleanArray *jbooleanArray;
+    typedef _jbyteArray *jbyteArray;
+    typedef _jcharArray *jcharArray;
+    typedef _jshortArray *jshortArray;
+    typedef _jintArray *jintArray;
+    typedef _jlongArray *jlongArray;
+    typedef _jfloatArray *jfloatArray;
+    typedef _jdoubleArray *jdoubleArray;
+    typedef _jobjectArray *jobjectArray;
+
+    #else
+
+    struct _jobject;
+
+    typedef struct _jobject *jobject;
+    typedef jobject jclass;
+    typedef jobject jthrowable;
+    typedef jobject jstring;
+    typedef jobject jarray;
+    typedef jarray jbooleanArray;
+    typedef jarray jbyteArray;
+    typedef jarray jcharArray;
+    typedef jarray jshortArray;
+    typedef jarray jintArray;
+    typedef jarray jlongArray;
+    typedef jarray jfloatArray;
+    typedef jarray jdoubleArray;
+    typedef jarray jobjectArray;
+
+    #endif
+
+    これにともない、JNI 関数の引数と返り値の型は、新規追加された参照型に
+    変更されました。
+
+___________________________________
+Java ネイティブインタフェースの変更 - 一部の基本的な型が変更されました。
+
+    前のバージョンの JDK の型 :
+
+    typedef char jboolean;
+    typedef char jbyte;
+    typedef unsigned long jsize;
+
+    JDK 1.1 FCSでの変更後の型 :
+
+    typedef unsigned char jboolean;
+    typedef signed char jbyte;
+    typedef jint jsize;
+
+
+    以前は、jsize は、ネイティブポインタと同じビット数をもつ、符号のない
+    整数型として定義されていました。これは、jsize を使用して配列の長さや
+    サイズを表そうという意図で定義されていました。しかし、jsize に対して
+    どのような操作が可能か、jsize を int に変換しても安全かどうかなど、
+    さまざまな混乱がみられました。いずれにしても、Java の配列や文字列は 
+    2^31 よりも大きくなることがないので、jsize を jint と同義に変更しま
+    した。配列と文字列を操作する Java の標準メソッドはすべて、長さおよび
+    サイズの型として int を使用します。
+
+____________
+ツールの変更 - javap に新しい引数 -s が追加されました。
+
+    -s: 
+        メソッドとフィールドの型のシグネチャ情報を、Java 仮想マシンが使
+        用する内部形式で出力します。これは、Java ネイティブインタフェー
+        ス (JNI) のユーザーがメソッドとフィールドを参照するときに使用す
+        る形式です。javap に -s フラグを指定し、JNI でアクセスするクラス
+        のメソッド情報とフィールド情報を出力すると、不明確な内部形式のシ
+        グネチャを手作業で作成するという厄介な作業を避けることができます。
+    
+    使用例 :
+
+    % cat foo.java
+    class foo {
+        Thread thread;
+        int i;
+        public static void main(String args[]) {
+        }
+        private void foo() {}
+    }
+
+    % javap -p foo
+    Compiled from foo.java
+    class foo extends java.lang.Object 
+        /* ACC_SUPER bit set */ 
+    {
+        java.lang.Thread thread;
+        int i;
+        public static void main(java.lang.String []);
+        private void foo();
+        foo();
+    }
+
+    % javap -p -s foo
+    Compiled from foo.java
+    class foo extends java.lang.Object 
+        /* ACC_SUPER bit set */
+    {
+        thread Ljava/lang/Thread;
+        i I
+        public static main ([Ljava/lang/String;)V
+        private foo ()V
+        <init> ()V
+    }
+
+____________
+ツールの変更 - javac に -deprecation フラグが追加されました。
+
+    このリリースの javac は、推奨されない API を含むクラスをコンパイルす
+    るとき、デフォルトでは簡単なメッセージを表示するだけで、推奨されない 
+    API の全リストは表示しません。この簡単なメッセージの例を次に示します。
+
+
+    % javac MyClass.java
+    Note: MyClass.java uses deprecated APIs.  Recompile with "-deprecation" 
+    for details.
+
+    その後、-deprecation フラグを使用してもう一度コンパイルすると、推奨
+    されないコンストラクタ、フィールド、メソッド、クラス、インタフェース
+    の名前が表示されます。次に例を示します。
+
+    % javac -deprecation MyClass.java
+    MyClass.java:3: Note: The constructor java.lang.String(byte[],int)
+    has been deprecated.
+        new String(new byte[0], 0);
+        ^
+    Note: wombat.java uses deprecated APIs.  Please consult the 
+    documentation for a better alternative.
+
+    このメッセージが表示されたら、JDK API リファレンスドキュメンテーショ
+    ン (jdk1.1/docs/api/packages.html)を参照してください。これは javadoc
+    によって生成される Web ページです。ここで該当する推奨されない API を
+    探し、それに代わる新しい API など、詳しい情報を調べることができます。
+
+    コンパイラのオプションをまとめると次のようになります。
+        javac -nowarn       => まったく表示しない
+        javac               => 推奨されない API について 1 行のコメントを
+                               表示する
+        javac -deprecation  => 完全なレポートを表示する
+
+    理由 :
+    この変更により、デフォルトでは警告の量を大幅に減らすことができ、開発
+    者はエラーへの対処だけに集中することができます。そして、後からゆっく
+    りと推奨されない API の解決に取り組むことができます。
+
+ 
+===================================================================
+JDK 1.1beta2 から JDK 1.1beta3 への変更
+-------------------------------------------------------------------
+
+JDK 1.1beta3 リリースで行われた変更とバグ修正は次のとおりです。
+
+______________
+バージョン番号 - このリリースのバージョン番号は「JDK1.1beta3.3」です。
+
+    内部では beta3.1 と beta3.2 の予定もありましたが、リリースはされませ
+    んでした。JDK のバージョンを調べるには、次のコマンドを実行します。
+
+        java -version
+
+________________
+パッケージの変更 - java.* に java.beans と java.math の 2 パッケージが新
+しく追加されました。これらのパッケージ内での変更については、後から詳しく
+説明します。
+
+_________________
+JavaBeans1 の変更 - JavaBeans1.0 が JDK1.1 の一部になりました。
+    JavaBeans 1.0 API 仕様を定義するクラスが JDK1.1 の一部になりました。
+    これらのクラスは BDK1.0 beta1 と beta2 の一部です。JDK1.1beta3 に合
+    わせた BDK1.0beta3 というバージョンも予定されています。
+
+  - JavaBeans API に 1 つだけ変更点がありました。Beans.instantiate の 
+    文字列引数が変更されました。以前、この引数は直列化された Bean への
+    パスでしたが、この変更によって、直列化が可能な Bean またはクラスの
+    名前になりました。
+
+____________
+一般的な変更 - PrintStream 引数を受け取るCore API メソッドが拡張され、
+PrintWriter 引数を受け取ることができるようになりました。
+
+    一部のコンストラクタとメソッドが追加され、新しい PrintWriter クラス
+    が使いやすくなりました。
+
+_________
+IO の変更 - ByteToCharConverterクラスと CharToByteConverterクラスが統合
+され、InputStreamReaderクラスと OutputStreamWriterクラスになりました。
+
+    ByteToCharConverterクラスと CharToByteConverterクラスは public ではな
+    くなったため、以前は converter 引数を受け取っていたさまざまなコンスト
+    ラクタとメソッドが文字エンコーディングの名前を受け取るようになりまし
+    た。InputStreamReader クラスと OutputStreamWriter クラスは基盤となる
+    バイトストリームのバッファリングを行わなくなりました。これらおよびそ
+    の他の変更の詳細は、次の Web ページで見ることができます。
+
+    http://java.sun.com/products/JDK/1.1/docs/guide/io/b3-changes.html
+
+___________
+Lang の変更 - java.lang.System に identityHashCode メソッドが新しく追加
+されました。
+
+
+    このメソッドのシグネチャは次のとおりです。
+
+    public static native int identityHashCode(Object x);
+
+    指定のオブジェクトのハッシュコードを返します。 これは、指定のオブジ
+    ェクトが hashCode() をオーバーライドしているかどうかに関係なく、デ
+    フォルトのメソッドである hashCode() の返り値と同じハッシュコードにな
+    ります。NULL 参照のハッシュコードはゼロです。
+
+    理由 :  
+    前のリリースでは、Java には一定時間で識別するハッシュ関数がありません
+    でした。つまり、オブジェクトの IDをキーとして一定時間の操作によるア
+    クセスを可能とするハッシュテーブルを作成する方法がありませんでした。
+
+    Java には一定時間で実行される ID 比較操作 (組み込み演算子 ==) はあり
+    ましたが、これに対応する一定時間で実行される ID ハッシュ操作はありま
+    せんでした。
+
+    問題のオブジェクトが equals と hashCode をオーバーライドするが、中味
+    がインターンされた文字列のように正規化されたインスタンスと作用し、検
+    索を高速に行うためにそれらをキーとして使う必要がある、という場合には、
+    この新規メソッドを使うととても便利です。
+
+    この操作は、文字列風のオブジェクトを equals と hashCode をオーバーラ
+    イドしない別のオブジェクト内にラップすることによっても行うことができ
+    ますが、この種のオブジェクトを識別テーブル内のキーとして直接使用でき
+    る方が理想的です。このようにすれば、ラッパーを割り当てるオーバーヘッ
+    ドを防ぐことができます。
+
+    Object.hashCode() メソッドは処理が低速です。パフォーマンスが問題では
+    ない場合はこのメソッドでも十分でが、パフォーマンスを最大限に高めたい
+    場合には、ラッパーを使用するのも、処理の遅い Object.hashCode() メソ
+    ッドを使用するのも適切ではありません。このような場合には、高速の 
+    identityHashCode() メソッドを使用する以外に、適切な方法はありません。
+
+___________
+Lang の変更 - getResourceAsName(String) が getResource(String) に変更さ
+れました。
+
+    以前の java.lang.Class と java.lang.ClassLoader には、次のようなシグ
+    ネチャのメソッドがありました。
+
+       String getResourceAsName(String)
+
+    これらのメソッドは、目的のリソースファイルに対する URL の外部表現を
+    返すものです。これらのメソッドは削除され、代わりに次のようなシグネチャ
+    のメソッドが追加されました。
+
+       java.net.URL getResource(String)
+
+    これらのメソッドは、実際の URL (リソースが見つからない場合は NULL) 
+    を返します。
+
+__________
+AWT の変更 - 新しいイベント型 ContainerEvent が追加されました。
+
+  この変更によってコンテナのフックを使用できるようになったので、下位コン
+  ポーネントのイベントリスナーを簡単に登録できます。
+ 
+  - ContainerEvent クラスおよび等価の ContainerListener インタフェースが
+    新しく追加され、コンテナのコンポーネントが追加または削除されたときに
+    通知を出すことができるようになりました。これによって、コンテナが自分
+    自身をすべての下位コンポーネントのイベントに対するリスナーとして登録
+    することが比較的簡単になりました。
+
+  - addContainerListener メソッドと removeContainerListener メソッドが 
+    Container に追加されました。
+
+  理由 :
+  beta2 のイベントモデルには、コンテナが下位コンポーネントの中で発生した
+  入力イベントを受け取る合理的な仕組みがありませんでしたが、このような操
+  作に対するニーズは多くありました。1.0 のイベントモデルでは、包含階層を
+  イベントが自動的にさかのぼって広まりました。そして、いずれかのコンポー
+  ネントが "ture" を返すと、イベントが吸収されて止まっていました。このモ
+  デルはとても強力で、操作も簡単でしたが、このモデルではエラーが起こりや
+  すくパフォーマンスも優れていませんでした。
+     
+__________
+AWT の変更 - AWT 入力イベント関連の API にさらに調整が加えられました。
+
+  顧客からのフィードバックとテストの結果、java.awt パッケージと 
+  java.awt.event パッケージ内の API に次の変更を加えました。
+
+  - TextEvent クラスと TextListener インタフェースを追加し、プログラムが
+    テキストコンポーネントに対するすべての変更 (ペーストやプログラム的な
+    修正を含む) を追跡できるようにしました。(バグ #4014945)
+
+  - windowActivated/windowDeactivated イベント型を WindowEvent に新しく追
+    加し、ウィンドウがフォーカスを得たり失ったりしたタイミングをプログラ
+    ムが判別できるようにしました。
+  
+  - isTemporary メソッドを FocusEvent に追加し、フォーカスがコンポーネン
+    ト間で明示的に移動したときと、フォーカスが一時的に変わったとき (ウィ
+    ンドウがアクティブではなくなったときなど) との違いを判別できるように
+    しました。
+  
+  - consume メソッドを InputEvent クラスに追加し、すべてのオブジェクトが
+    入力イベントを消費できるようにしました。以前は、入力イベントを消費で
+    きるのは、そのイベントに関連付けられている Component だけでした。
+
+  - AWTEventMulticaster クラスを public にしました。その結果、コンポーネ
+    ントをサブクラス化して、AWT 定義イベントのマルチキャストソースとして
+    使用できるようになりました。
+  
+  - java.awt.event Adapter クラスをabstract クラスにしました。その結果、
+    これらのクラスが拡張が必要であるということがわかりやすくなりました。
+
+  - 古い 1.0 のイベントをパラメータとして受け取る java.awt.event Event 
+    クラスのコンストラクタを削除しました。
+  
+  - ComponentEvent 型のイベント ID 型を変更しました。この結果、
+    WindowEvent ID とクラッシュする恐れがなくなりました。
+  
+  - 仮想キーコード識別子を KeyEvent に追加し、キーボード上にあるすべての
+    標準キーを正しく表現できるようにしました。キーイベントの keyCode プロ
+    パティは、ASCII 整数ではなく、これらの識別子のいずれかを含むようにな
+    りました。
+
+  - isPopupTrigger メソッドを MouseEvent クラスに追加しました。この結果、
+    マウスイベントによってポップアップメニューを表示するかどうかを、プ
+    ラットフォームに依存しないで判別できるようになりました。
+    (バグ #4017794)
+
+__________
+AWT の変更 - getTreeLock() メソッドが java.awt.Componentに新しく追加され
+ました。
+
+変更による悪影響を最小限に抑えるために、public フィールドの 
+Component.LOCKは beta3では変更されませんが、beta3と最終リリースの間で  
+非 public (パッケージプライベート) になります。
+
+    理由 :
+    AWTには、コンポーネントのツリー構造に影響または依存する操作の同期を
+    とるための、 Component.LOCKと呼ばれる public static finalフィールド
+    があります。
+
+    このフィールドを public として公開すると、将来の AWT で 1 つのツール
+    キット単位のロックを提供するための実装との間で、不要な競合が発生しま
+    す。
+
+    Component クラスのインスタンスのメソッドによってロックオブジェクトへ
+    のアクセスを提供した方が、将来の実装でも、必要に応じて状況に依存した
+    ロックオブジェクトを返すことが可能になります。
+
+__________
+AWT の変更 - Component クラスに getLocationOnScreen メソッドが新しく追加
+されました。
+
+    Componentクラスに次の新しいメソッドが追加されました。
+
+      Point getLocationOnScreen()
+
+    理由 :
+    このメソッドは、画面の座標空間におけるコンポーネントの現在位置を返し
+    ます。
+
+__________
+AWT の変更 - Choice クラスに insertメソッドが新しく追加されました。
+
+    Choice クラスに次の新しいメソッドが追加されました。
+
+      void insert(String item, int index) 
+
+    理由 :
+    このメソッドを使用すると、Choice コントロールの index で指定した位置
+    に項目を挿入することができます (Beta2では、項目は常に最後に追加され
+    ていました)。
+
+__________
+AWT の変更 - ItemSelectableインタフェースに変更がありました。
+
+    ItemSelectableインタフェースの次の2つのメソッドが削除されました。
+       public int[] getSelectedIndexes();
+       public String[] getSelectedItems();
+
+    代わりに、次のメソッドが追加されました。
+       public Object[] getSelectedObjects();
+
+    理由 :
+    この変更により、項目は Stringで表現できるものでなければならないとい
+    う制限がなくなりました。これに伴って、ItemSelectableを実装する 
+    AWT クラス (List、 Choice、Checkbox、CheckboxMenuItem) も変更さ
+    れました。
+
+__________
+AWT の変更 - Containerクラスと Componentクラスが直接拡張できるようになり
+ました。この結果、サイズの小さいコンポーネントを作成できるようになりまし
+た。
+
+  1) java.awt.Componentに次のメソッドが追加されました。
+
+	Dimension getMaximumSize();
+
+     beta2のコンポーネントでは、最小サイズと理想的サイズとしか指定できず、
+     コンポーネントのストレッチが無限に可能と見なされていました。しかし、
+     サイズの小さいコンポーネントの場合は高精度の書き込みが行われること
+     が多く、無限のストレッチは不可能でした。また、一部のコンポーネント
+     には柔軟性が不要でした。
+
+     このメソッドのデフォルトの実装では、現在の動作を反映して無限のサイズ
+     を指定します。
+
+  2) java.awt.Componentに次の2つの配置メソッドが追加されました。
+
+        float getAlignmentX();
+	float getAlignmentY();
+
+     これらのメソッドは 0.0と 1.0の間の数値を返します。これらの値は、その
+     コンポーネントの、他のコンポーネントに対する相対的な配置方法を表しま
+     す。0.0は起点に配置することを表し、1.0は起点から最も遠い位置に配置
+     することを表し、0.5は中央に配置することを表します。たとえば、テキス
+     トコンポーネントは y 座標をベースラインにおいて配置され、アイコンコ
+     ンポーネントはホットスポット (定義されている場合) を基準に配置され
+     ます。
+
+    理由 :
+    beta3より前は、AWT内にコンポーネントを新しく作成するには、Canvas、
+    Panel、およびこれらのサブクラスを拡張するしかありませんでした。
+    ComponentとContainer を直接拡張することはできませんでした。不透明な
+    ネイティブウィンドウが関連付けられるため、すべてのコンポーネントは自
+    動的にサイズが大きくなりました。このため、サイズの大きいコンポーネン
+    トはリソースを多く消費するのでたくさん作成することはできず、さらに
+    透明なピクセルをもつことができないという問題がありました。この変更に
+    よって、サイズの小さいコンポーネントを標準でサポートできるようになり
+    ました。
+
+___________
+MATH の変更 - java.mathという新しいパッケージが追加されました。このパッ
+ケージは、最初は BigIntegerとBigDecimalの2つのクラスを含んでいます。
+
+    BigNumクラスが削除され、代わりに BigIntegerクラスとBigDecimalクラス
+    が追加されました。
+
+    BigIntegers クラスは任意精度で値不変の整数で、Java のすべての基本的
+    な演算子、および java.lang.Mathで提供されるすべての関連した static 
+    メソッドと同等の機能を提供します。さらに、 BigIntegers はモジュール演
+    算、GCD 計算、主要度テスト、プラム生成、単一ビット操作、その他の奇数
+    および終端の操作を提供します。
+
+    BigDecimals は任意精度で値不変の符号付き 10 進数で、通貨計算に適して
+    います。 BigDecimals は基本的な演算、スケール操作、比較、形式変換、ハ
+    ッシングなどの操作を提供します。BigDecimal クラスを使うと、繰り上げ
+    や切り捨ての処理を完全に制御することができるので、精度の切り捨てが必
+    要な操作では処理方法を明示的に指定することができます。
+
+_______________
+Security の変更 -  getProviders() という新しいメソッドが追加されました。
+このメソッドを使うと、インストールされている暗号化プロバイダを調べるこ
+とができます。
+ 
+    getProviders() メソッドが Security クラスに追加されました。このメソ
+    ッドの形式は次のとおりです。
+ 
+	public static String[] getProviders();
+
+____________
+ツールの変更 - javakey は、キーと証明をファイルにエクスポートできるよう
+になりました。
+
+    これは javakey ツールに対する変更で、既存のインポート機能に対応する
+    機能です。
+
+____________
+ツールの変更 - javac -nowarn フラグを使用すると、推奨されない API につい
+ていの警告メッセージが表示されないようになりました。
+
+    このフラグを使用するとメッセージの量が大幅に減るので、開発者はエラー
+    だけを確認することができます。
+
+____________
+ツールの変更 - jar ツールと以前の JAR ファイルとの互換性がなくなりました。
+
+    beta3 の jar ツール (つまり ZipInputStream と ZipOutputStream) は、
+    beta2 の jar ツールで作成された JAR ファイルとは互換性がありません。
+    JAR ツールはこれらのファイルを認識することができません。beta2 の 
+    ZipInputStream と ZipOutputStream にはバグがあり、zip 仕様に正しく従
+    ったファイルを生成することができませんでした。このリリースでこのバグ
+    が修正され、ほかのツールでも認識できる正しい zip ファイルを生成できる
+    ようになりました。
+
+____________
+ツールの変更 - javadoc から MIF を生々する機能が削除されました。
+
+    javadoc の「-doctype MIF」オプションが削除されました。このオプション
+    は、HotJava が JDK に対して持っていた HTML パーサへの依存性を取り除
+    くために必要とされていました。
+
+===================================================================
+最初の JDK 1.1beta から JDK 1.1beta2 への変更
+-------------------------------------------------------------------
+
+JDK 1.1beta2 リリースで行われたバグ修正と改良は次のとおりです。
+
+______________
+バージョン番号 - このリリースのバージョン番号は「JDK1.1beta2」です。
+
+    JDK のバージョンを調べるには、次のコマンドを実行します。
+
+        java -version
+
+____
+変更 - public クラスのソースコードが含まれました。
+
+    このリリースでは、java.* パッケージの public クラスのソースコードが、
+    src.zip ファイルに含まれました。これのソースコードは、classes.zip フ
+    ァイルに含まれる public クラスに対応します。この src.zip は以前 
+    JDK 1.0.2 で出荷されたものと同じですが、JDK 1.1 で追加された新しい
+     public クラスのソースも含んでいます。
+__________
+バグの修正 - Solaris でjar ツールを使って作成するファイルの数に制限がある。
+
+    バグの説明
+    Solaris では、環境設定によっては、64 以上の項目をもつ JAR ファイルを
+    作成しようとすると失敗することがあります。このエラーの原因となるコマ
+    ンドは次のとおりです。
+
+    % jar cvf test.jar <somedir>
+  
+    <somedir> に、64 個以上のファイルが入っているディレクトリを指定する
+    とエラーになることがあります。
+
+    対処 - このバグは修正されました。
+
+__________
+バグの修正 - Javakey ツールが、jar ファイルに無効なシグネチャの署名をつ
+ける。
+
+    バグの説明
+    javakey のセキュリティツールに矛盾があったため、jar ファイルに無効な
+    シグネチャの署名がつきます。つまり、このシグネチャをチェックすると必
+    ず失敗し、すべてのアプレットが「信頼できないアプレット」として実行さ
+    れていたため、最小限の権限しか許可されませんでした。このためコード署
+    名機能は使用できませんでしたが、これによってセキュリティ違反が起こる
+    ことはありませんでした。
+
+    対処 - このバグは修正されました。
+
+__________
+バグの修正 - 4017054 - case ステートメントの数値の範囲に制限がある。
+ 
+    バグの説明
+    Java の switch ステートメントに含めた case ステートメントに、広い範
+    囲の数値を含めると (case の数自体は大きくなくても)、Java コンパイラ
+    がそのステートメントを実行しようとしたときにメモリ不足になります。た
+    とえば、switch ステートメントに case 0 と case 99999999 を含めると、
+    コンパイル時にエラーになります。
+ 
+    対処 - このバグは修正されました。
+
+__________
+バグの修正 - 4018832 - java.io.LineNumberReader クラスがありません。
+
+    バグの説明
+    Win32 リリースで、java.io.LineNumberReader クラスはドキュメンテーシ
+    ョンには記載されていますが、classes.zip ファイルにはこのクラスのファ
+    イルが含まれていません。
+
+    対処 - java.io.LineNumberReader クラスが classes.zip に追加されまし
+    た。
+
+__________
+バグの修正 - 4018252 - DecimalNumberFormat メソッドが例外をスローします。
+
+    バグの説明
+    java.text.DecimalNumberFormat クラスの format メソッドまたは parse 
+    メソッドを呼び出すと、例外がスローされます。一般的なスタックトレース
+    を次に示します。
+
+    java.lang.NumberFormatException: 451.0D
+        at java.lang.Double.<init>(Double.java)
+        at java.text.DigitList.getRealDouble(DigitList.java)
+        at java.text.DigitList.set(DigitList.java)
+        at java.text.DecimalFormat.format(DecimalFormat.java)
+        at java.text.NumberFormat.format(NumberFormat.java)
+
+    DecimalNumberFormat を直接使用することはあまりありませんが、これらは
+     NumberFormat.getDefault()、NumberFormat.getDefaultCurrency() 、
+     NumberFormat.getDefaultPercent() を呼び出したときに返されます。
+
+    対処 - このバグは修正されました。
+
